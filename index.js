@@ -13,6 +13,9 @@ let connectionColor = "lightcoral";
 let clientCount = 0;
 let nextClientId = 0; // Counter for assigning unique client IDs
 
+// Middleware to parse JSON requests
+app.use(express.json());
+
 // Serve a simple HTML page to show the server status
 app.get('/', (req, res) => {
     res.send(`
@@ -36,6 +39,49 @@ app.get('/', (req, res) => {
 // Endpoint to fetch all anchor data
 app.get('/getAllAnchors', (req, res) => {
     res.json(anchors);
+});
+
+// New endpoint to clear all anchors
+app.get('/clearAllAnchors', (req, res) => {
+    anchors = []; // Clear the anchors array
+    console.log('All anchors cleared.');
+    res.json({ message: 'All anchors have been cleared.' });
+});
+
+// New POST endpoint to add or update an anchor
+app.post('/setAnchor', (req, res) => {
+    const { id, lat, long, alt } = req.body;
+
+    if (!id || lat === undefined || long === undefined || alt === undefined) {
+        return res.status(400).json({ message: 'Invalid input, please provide id, lat, long, and alt.' });
+    }
+
+    // Find if anchor already exists
+    const existingAnchorIndex = anchors.findIndex(anchor => anchor.id === id);
+
+    if (existingAnchorIndex > -1) {
+        // Update existing anchor
+        anchors[existingAnchorIndex] = {
+            id,
+            latitude: lat,
+            longitude: long,
+            altitude: alt,
+            lastUpdated: Date.now()
+        };
+        console.log(`Updated anchor with ID: ${id}`);
+        res.json({ message: `Anchor with ID: ${id} updated successfully.` });
+    } else {
+        // Create new anchor
+        anchors.push({
+            id,
+            latitude: lat,
+            longitude: long,
+            altitude: alt,
+            lastUpdated: Date.now()
+        });
+        console.log(`Added new anchor with ID: ${id}`);
+        res.json({ message: `Anchor with ID: ${id} added successfully.` });
+    }
 });
 
 // WebSocket connection handling

@@ -49,11 +49,12 @@ app.get('/clearAllAnchors', (req, res) => {
 });
 
 // New POST endpoint to add or update an anchor
+// New POST endpoint to add or update an anchor
 app.post('/setAnchor', (req, res) => {
-    const { id, lat, long, alt } = req.body;
+    const { id, latitude, longitude, altitude } = req.body;
 
-    if (!id || lat === undefined || long === undefined || alt === undefined) {
-        return res.status(400).json({ message: 'Invalid input, please provide id, lat, long, and alt.' });
+    if (!id || latitude === undefined || longitude === undefined || altitude === undefined) {
+        return res.status(400).json({ message: 'Invalid input, please provide id, latitude, longitude, and altitude.' });
     }
 
     // Find if anchor already exists
@@ -63,10 +64,10 @@ app.post('/setAnchor', (req, res) => {
         // Update existing anchor
         anchors[existingAnchorIndex] = {
             id,
-            latitude: lat,
-            longitude: long,
-            altitude: alt,
-            lastUpdated: Date.now()
+            latitude,
+            longitude,
+            altitude,
+            lastUpdated: Date.now() // Add timestamp
         };
         console.log(`Updated anchor with ID: ${id}`);
         res.json({ message: `Anchor with ID: ${id} updated successfully.` });
@@ -74,15 +75,16 @@ app.post('/setAnchor', (req, res) => {
         // Create new anchor
         anchors.push({
             id,
-            latitude: lat,
-            longitude: long,
-            altitude: alt,
-            lastUpdated: Date.now()
+            latitude,
+            longitude,
+            altitude,
+            lastUpdated: Date.now() // Add timestamp
         });
         console.log(`Added new anchor with ID: ${id}`);
         res.json({ message: `Anchor with ID: ${id} added successfully.` });
     }
 });
+
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {

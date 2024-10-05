@@ -130,6 +130,36 @@ wss.on('connection', (ws) => {
                 } else {
                     ws.send(JSON.stringify({ type: 'noUpdates', message: 'No updates available from server.' }));
                 }
+            } else if (data.type === 'fetchFirstUpdate') {
+                console.log(`Client ${clientId} requested the first update...`);
+                const clientAnchors = data.anchorData || [];
+                let responseAnchors = [];
+
+                if (clientAnchors.length === 0) {
+                    // If no anchors are sent, return all server anchors
+                    responseAnchors = anchors;
+                    ws.send(JSON.stringify({ type: 'updateAnchor', anchorData: responseAnchors }));
+                } else {
+                    // Check if any of the anchors exist
+                    let newAnchorsAdded = false;
+                    clientAnchors.forEach(clientAnchor => {
+                        const existingAnchorIndex = anchors.findIndex(anchor => anchor.id === clientAnchor.id);
+                        if (existingAnchorIndex === -1) {
+                            // Add new anchor since it doesn't exist
+                            anchors.push(clientAnchor);
+                            newAnchorsAdded = true;
+                            console.log(`Added new anchor with ID: ${clientAnchor.id}`);
+                        }
+                    });
+                    
+                    // Return existing anchors list
+                    responseAnchors = anchors;
+                    ws.send(JSON.stringify({ type: 'updateAnchor', anchorData: responseAnchors }));
+                    
+                    if (newAnchorsAdded) {
+                        console.log(`New anchors added based on client request.`);
+                    }
+                }
             } else if (data.type === 'updateAnchor') {
                 console.log(`Client ${clientId} is updating anchors...`);
                 handleUpdateAnchors(data.anchorData);
@@ -196,10 +226,25 @@ function handleUpdateAnchors(anchorDataList) {
                 console.error("Anchor ID is undefined or missing");
             }
         });
+
+        // Broadcast the updated anchors to all connected clients
+        broadcastAnchorsToAllClients();
     } else {
         console.error("anchorData is not an array:", anchorDataList);
     }
 }
+
+function broadcastAnchorsToAllClients() {
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+                type: 'updateAnchor',
+                anchorData: anchors
+            }));
+        }
+    });
+}
+
 
 // Utility function to compare anchor data
 function isAnchorDataEqual(anchor1, anchor2) {
